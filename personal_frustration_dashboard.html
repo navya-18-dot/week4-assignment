@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Personal Frustration Data Science Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1d2630;
+      --muted: #667085;
+      --line: #d7dde5;
+      --paper: #f7f8fb;
+      --panel: #ffffff;
+      --teal: #147d7e;
+      --coral: #d85c4a;
+      --blue: #386fa4;
+      --gold: #b7791f;
+      --green: #2f855a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+      padding: 22px 28px 18px;
+    }
+
+    header h1 {
+      margin: 0 0 6px;
+      font-size: clamp(24px, 3vw, 34px);
+      letter-spacing: 0;
+    }
+
+    header p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 920px;
+      line-height: 1.45;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .top-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 19px;
+    }
+
+    label {
+      display: block;
+      margin: 13px 0 6px;
+      color: #344054;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    select,
+    input[type="number"],
+    input[type="range"] {
+      width: 100%;
+    }
+
+    select,
+    input[type="number"] {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px 11px;
+      background: white;
+      color: var(--ink);
+      font-size: 15px;
+    }
+
+    input[type="range"] {
+      accent-color: var(--teal);
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 86px;
+      gap: 12px;
+      align-items: end;
+      padding: 8px 0;
+      border-bottom: 1px solid #edf0f4;
+    }
+
+    .field-row:last-child {
+      border-bottom: 0;
+    }
+
+    .value-pill {
+      display: inline-block;
+      min-width: 58px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eef6f6;
+      color: var(--teal);
+      text-align: center;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button {
+      border: 1px solid var(--teal);
+      border-radius: 6px;
+      padding: 10px 13px;
+      background: var(--teal);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: white;
+      color: var(--teal);
+    }
+
+    .score-card {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .gauge {
+      width: 132px;
+      height: 132px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: conic-gradient(var(--teal) 0deg, #e6eaef 0deg);
+      position: relative;
+    }
+
+    .gauge::after {
+      content: "";
+      position: absolute;
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: white;
+    }
+
+    .gauge span {
+      position: relative;
+      z-index: 1;
+      font-size: 25px;
+      font-weight: 800;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 13px;
+      background: #eef2ff;
+      color: var(--blue);
+    }
+
+    .result-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin: 4px 0 8px;
+    }
+
+    .muted {
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .list-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(240px, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    ul {
+      margin: 8px 0 0;
+      padding-left: 20px;
+      line-height: 1.5;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(210px, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .issue-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--blue);
+      border-radius: 8px;
+      padding: 15px;
+      cursor: pointer;
+      min-height: 132px;
+    }
+
+    .issue-card.active {
+      border-left-color: var(--coral);
+      box-shadow: 0 0 0 2px rgba(216, 92, 74, 0.15);
+    }
+
+    .issue-card h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+
+    .issue-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.4;
+      font-size: 14px;
+    }
+
+    canvas {
+      width: 100%;
+      min-height: 220px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+    }
+
+    .footer-note {
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 860px) {
+      main {
+        padding: 14px;
+      }
+
+      .top-grid,
+      .list-grid,
+      .cards,
+      .score-card {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Personal Frustration Data Science Dashboard</h1>
+    <p>
+      Choose the daily-life issue that frustrates you most, enter your current
+      habits, and get a simple prediction with practical recommendations.
+    </p>
+  </header>
+
+  <main>
+    <section class="top-grid">
+      <div class="panel">
+        <h2>What frustrates you most?</h2>
+        <label for="issueSelect">Select your problem area</label>
+        <select id="issueSelect"></select>
+        <div id="inputFields"></div>
+        <div class="actions">
+          <button id="predictButton" type="button">Predict and Recommend</button>
+          <button id="sampleButton" class="secondary" type="button">Use Sample Values</button>
+          <button id="csvButton" class="secondary" type="button">Download CSV Template</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Prediction</h2>
+        <div class="score-card">
+          <div class="gauge" id="gauge"><span id="scoreText">0</span></div>
+          <div>
+            <span class="tag" id="levelText">Waiting</span>
+            <div class="result-title" id="resultTitle">Enter your details</div>
+            <p class="muted" id="resultSummary">
+              The dashboard will estimate your risk or performance level and show the strongest improvement areas.
+            </p>
+          </div>
+        </div>
+        <canvas id="factorChart" width="700" height="260" aria-label="Factor impact chart"></canvas>
+      </div>
+    </section>
+
+    <section class="list-grid">
+      <div class="panel">
+        <h2>Pros</h2>
+        <ul id="prosList"></ul>
+      </div>
+      <div class="panel">
+        <h2>Cons / Impacts</h2>
+        <ul id="consList"></ul>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2>Recommendations</h2>
+      <ul id="recommendationList"></ul>
+      <p class="footer-note">
+        Tip for the assignment: replace sample values with your own 7-14 day tracking data, then compare before-and-after habits.
+      </p>
+    </section>
+
+    <section class="cards" id="issueCards"></section>
+  </main>
+
+  <script>
+    const issues = {
+      productivity: {
+        title: "Daily Productivity Predictor",
+        short: "Why are some days productive and others wasted?",
+        unit: "/10",
+        mode: "score",
+        fields: [
+          ["sleepHours", "Sleep hours", 3, 10, 0.1, 6.2],
+          ["wakeUpHour", "Wake-up time, 24h", 4, 12, 0.1, 8.4],
+          ["screenTime", "Total screen time, hours", 1, 12, 0.1, 7],
+          ["socialMedia", "Social media minutes", 0, 360, 5, 125],
+          ["coffee", "Coffee cups", 0, 6, 1, 2],
+          ["exercise", "Exercise, 0 no / 1 yes", 0, 1, 1, 0],
+          ["mood", "Mood score", 1, 10, 1, 5],
+          ["focusHours", "Focused work/study hours", 0, 9, 0.1, 2.5]
+        ],
+        pros: [
+          "Turns vague bad days into measurable habit patterns.",
+          "Shows which variables are most worth changing first.",
+          "Easy to collect with a 7-14 day spreadsheet."
+        ],
+        cons: [
+          "Short tracking periods can be noisy.",
+          "Mood and productivity scores are subjective.",
+          "Unexpected events can affect results."
+        ],
+        calculate(v) {
+          let score = 2.1 + 0.7 * v.sleepHours - 0.35 * Math.max(6 - v.sleepHours, 0)
+            - 0.25 * Math.max(v.wakeUpHour - 8, 0) - 0.22 * v.screenTime
+            - 0.012 * v.socialMedia + 0.2 * v.coffee + 0.8 * v.exercise
+            + 0.32 * v.mood + 0.48 * v.focusHours;
+          score = clamp(score, 1, 10);
+          const recs = [];
+          if (v.sleepHours < 6) recs.push("Sleep is below 6 hours; aim for 7 hours before trying complex productivity hacks.");
+          if (v.socialMedia > 90) recs.push("Keep social media under 90 minutes and avoid it before study/work.");
+          if (v.exercise === 0) recs.push("Add a short walk or workout; exercise improves both mood and focus.");
+          if (v.focusHours < 3) recs.push("Schedule two focused work blocks instead of relying on all-day motivation.");
+          if (v.screenTime > 6) recs.push("Create two phone-free periods during your highest-energy hours.");
+          return result(score, "Predicted productivity score", recs, [
+            ["Sleep", v.sleepHours / 10],
+            ["Focused work", v.focusHours / 9],
+            ["Mood", v.mood / 10],
+            ["Low social media", 1 - v.socialMedia / 360],
+            ["Exercise", v.exercise]
+          ]);
+        }
+      },
+      phone: {
+        title: "Phone Usage vs Study/Work Performance",
+        short: "Is my phone actually ruining my focus?",
+        unit: "%",
+        mode: "score",
+        fields: [
+          ["screenTime", "Total screen time, hours", 1, 12, 0.1, 7.5],
+          ["instagram", "Instagram minutes", 0, 240, 5, 95],
+          ["youtube", "YouTube minutes", 0, 240, 5, 80],
+          ["whatsapp", "WhatsApp minutes", 0, 180, 5, 55],
+          ["studyHours", "Study/work hours", 0, 10, 0.1, 3],
+          ["taskCompletion", "Task completion percent", 0, 100, 5, 55],
+          ["distractions", "Distraction count", 0, 80, 1, 35]
+        ],
+        pros: [
+          "Makes phone distraction visible instead of emotional.",
+          "App-wise tracking gives specific behavior changes.",
+          "Very relatable for students and workers."
+        ],
+        cons: [
+          "Some phone time can still be useful.",
+          "Performance also depends on task difficulty.",
+          "Distraction counts require honest tracking."
+        ],
+        calculate(v) {
+          let score = 55 + 5 * v.studyHours + 0.3 * v.taskCompletion
+            - 2.5 * v.screenTime - 0.08 * v.instagram - 0.04 * v.youtube
+            - 0.02 * v.whatsapp - 0.7 * v.distractions;
+          score = clamp(score, 0, 100);
+          const recs = [];
+          if (v.instagram > 60) recs.push("Move Instagram to a fixed 20-minute evening window.");
+          if (v.distractions > 20) recs.push("Keep the phone outside arm's reach during study/work blocks.");
+          if (v.screenTime > 6) recs.push("Set app timers and remove non-essential apps from the home screen.");
+          if (v.taskCompletion < 70) recs.push("Choose three priority tasks before opening any social app.");
+          return result(score, "Predicted performance", recs, [
+            ["Study hours", v.studyHours / 10],
+            ["Task completion", v.taskCompletion / 100],
+            ["Low distractions", 1 - v.distractions / 80],
+            ["Low Instagram", 1 - v.instagram / 240],
+            ["Low screen time", 1 - v.screenTime / 12]
+          ]);
+        }
+      },
+      expense: {
+        title: "Expense Prediction / Money Leak Detection",
+        short: "Where does my money disappear?",
+        unit: "%",
+        mode: "risk",
+        fields: [
+          ["dailySpend", "Daily spending", 0, 5000, 50, 850],
+          ["foodSpend", "Food/snacks spending", 0, 2000, 50, 350],
+          ["shoppingSpend", "Shopping spending", 0, 3000, 50, 700],
+          ["onlinePayments", "Online purchases count", 0, 20, 1, 6],
+          ["impulsePercent", "Impulse purchases percent", 0, 100, 5, 55],
+          ["needPercent", "Need-based purchases percent", 0, 100, 5, 45]
+        ],
+        pros: [
+          "Finds invisible money leaks quickly.",
+          "Works well with simple daily tracking.",
+          "Helps separate need spending from impulse spending."
+        ],
+        cons: [
+          "Requires honest category tagging.",
+          "One-time purchases can distort a small dataset.",
+          "Income level changes what counts as risky."
+        ],
+        calculate(v) {
+          let risk = 20 + v.dailySpend / 60 + v.shoppingSpend / 70
+            + 2.5 * v.onlinePayments + 0.5 * v.impulsePercent
+            - 0.25 * v.needPercent;
+          risk = clamp(risk, 0, 100);
+          const recs = [];
+          if (v.impulsePercent > 40) recs.push("Use a 24-hour rule before non-essential purchases.");
+          if (v.onlinePayments > 5) recs.push("Reduce one-click payments and review cart items at night.");
+          if (v.foodSpend > 300) recs.push("Set a weekly food/snack budget and track cashless payments.");
+          if (v.shoppingSpend > 500) recs.push("Create a separate shopping allowance and stop when it is used.");
+          return result(risk, "Predicted money-leak risk", recs, [
+            ["Daily spend", v.dailySpend / 5000],
+            ["Impulse buying", v.impulsePercent / 100],
+            ["Shopping spend", v.shoppingSpend / 3000],
+            ["Online buys", v.onlinePayments / 20],
+            ["Need based", v.needPercent / 100]
+          ]);
+        }
+      },
+      sleep: {
+        title: "Sleep Quality Analyzer",
+        short: "Why do I feel tired even after sleeping?",
+        unit: "/10",
+        mode: "score",
+        fields: [
+          ["bedtime", "Bedtime, 24h", 20, 27, 0.1, 24.2],
+          ["sleepDuration", "Sleep duration hours", 3, 10, 0.1, 6.1],
+          ["phoneBeforeBed", "Phone before bed minutes", 0, 180, 5, 75],
+          ["caffeine", "Caffeine cups", 0, 6, 1, 3],
+          ["stress", "Stress level", 1, 10, 1, 7],
+          ["energy", "Current energy score", 1, 10, 1, 4]
+        ],
+        pros: [
+          "Connects sleep habits with next-day energy.",
+          "Useful even with a short one-week log.",
+          "Gives clear bedtime and phone-use experiments."
+        ],
+        cons: [
+          "Sleep quality can be affected by health issues.",
+          "Self-reported energy is subjective.",
+          "Caffeine timing matters, not only count."
+        ],
+        calculate(v) {
+          let quality = 2 + 0.85 * v.sleepDuration - 0.5 * Math.max(v.bedtime - 23, 0)
+            - 0.018 * v.phoneBeforeBed - 0.25 * v.caffeine
+            - 0.45 * v.stress + 0.2 * v.energy;
+          quality = clamp(quality, 1, 10);
+          const recs = [];
+          if (v.sleepDuration < 7) recs.push("Move bedtime earlier until sleep reaches about 7 hours.");
+          if (v.phoneBeforeBed > 45) recs.push("Stop phone use 45 minutes before sleep.");
+          if (v.stress > 6) recs.push("Write tomorrow's first task before bed to reduce mental load.");
+          if (v.caffeine > 2) recs.push("Avoid caffeine after mid-afternoon and reduce total cups.");
+          return result(quality, "Predicted sleep quality", recs, [
+            ["Sleep duration", v.sleepDuration / 10],
+            ["Early bedtime", 1 - Math.max(v.bedtime - 20, 0) / 7],
+            ["Low phone use", 1 - v.phoneBeforeBed / 180],
+            ["Low stress", 1 - v.stress / 10],
+            ["Energy", v.energy / 10]
+          ]);
+        }
+      },
+      commute: {
+        title: "Commute Delay Predictor",
+        short: "When should I leave to avoid being late?",
+        unit: "%",
+        mode: "risk",
+        fields: [
+          ["departure", "Departure time, 24h", 6, 11, 0.1, 8.5],
+          ["distance", "Distance km", 1, 40, 1, 12],
+          ["traffic", "Traffic level", 1, 10, 1, 8],
+          ["rain", "Rain, 0 no / 1 yes", 0, 1, 1, 0],
+          ["dayType", "Weekday, 1 yes / 0 weekend", 0, 1, 1, 1],
+          ["buffer", "Extra buffer minutes", 0, 60, 5, 10]
+        ],
+        pros: [
+          "Turns lateness into a planning problem.",
+          "Easy to collect with maps travel duration.",
+          "Useful for school, work, and appointments."
+        ],
+        cons: [
+          "Traffic can change suddenly.",
+          "Weather and road closures need fresh data.",
+          "A simple model gives guidance, not certainty."
+        ],
+        calculate(v) {
+          let risk = 20 + 4 * v.distance + 6 * v.traffic + 18 * v.rain
+            + 12 * v.dayType + 9 * Math.max(8.5 - v.departure, 0)
+            - 1.4 * v.buffer;
+          risk = clamp(risk, 0, 100);
+          const recs = [];
+          if (v.traffic > 6) recs.push("Leave 15-20 minutes earlier during peak traffic.");
+          if (v.buffer < 15) recs.push("Add at least 15 minutes of buffer for important arrivals.");
+          if (v.rain === 1) recs.push("Increase buffer on rainy days because delays are less predictable.");
+          if (v.departure >= 8 && v.departure <= 9.5) recs.push("Test leaving before peak time for three days.");
+          return result(risk, "Predicted delay risk", recs, [
+            ["Traffic", v.traffic / 10],
+            ["Distance", v.distance / 40],
+            ["Rain", v.rain],
+            ["Weekday", v.dayType],
+            ["Buffer", v.buffer / 60]
+          ]);
+        }
+      },
+      fitness: {
+        title: "Personal Fitness Progress Predictor",
+        short: "Am I actually improving?",
+        unit: "%",
+        mode: "score",
+        fields: [
+          ["workoutMinutes", "Workout minutes", 0, 120, 5, 35],
+          ["weeklyWorkouts", "Workouts per week", 0, 7, 1, 3],
+          ["sleepHours", "Sleep hours", 3, 10, 0.1, 6.5],
+          ["protein", "Protein grams", 20, 180, 5, 75],
+          ["calories", "Calories consistency score", 1, 10, 1, 6],
+          ["performance", "Current performance score", 1, 10, 1, 5]
+        ],
+        pros: [
+          "Shows whether habits support progress.",
+          "Combines training, sleep, and nutrition.",
+          "Useful for weekly review."
+        ],
+        cons: [
+          "Progress can be slow and non-linear.",
+          "Body weight alone is not enough.",
+          "Injury, form, and recovery also matter."
+        ],
+        calculate(v) {
+          let progress = 18 + 0.35 * v.workoutMinutes + 5.5 * v.weeklyWorkouts
+            + 4 * v.sleepHours + 0.12 * v.protein + 3 * v.calories
+            + 3.5 * v.performance;
+          progress = clamp(progress, 0, 100);
+          const recs = [];
+          if (v.weeklyWorkouts < 3) recs.push("Aim for at least three consistent workouts per week.");
+          if (v.sleepHours < 7) recs.push("Improve sleep because recovery drives progress.");
+          if (v.protein < 80) recs.push("Increase protein gradually based on your body and diet needs.");
+          if (v.calories < 6) recs.push("Keep meals more consistent before judging workout results.");
+          return result(progress, "Predicted fitness progress readiness", recs, [
+            ["Workout time", v.workoutMinutes / 120],
+            ["Weekly workouts", v.weeklyWorkouts / 7],
+            ["Sleep", v.sleepHours / 10],
+            ["Protein", v.protein / 180],
+            ["Consistency", v.calories / 10]
+          ]);
+        }
+      },
+      social: {
+        title: "Social Media Overuse Risk",
+        short: "Unnecessary feed wastes time and causes procrastination.",
+        unit: "%",
+        mode: "risk",
+        fields: [
+          ["dailyMinutes", "Daily social media minutes", 0, 480, 5, 210],
+          ["unnecessaryFeed", "Unnecessary feed percent", 0, 100, 5, 65],
+          ["shortVideos", "Short-video minutes", 0, 300, 5, 95],
+          ["notifications", "Notifications per day", 0, 180, 5, 70],
+          ["lateNight", "Late-night usage minutes", 0, 180, 5, 55],
+          ["workHours", "Study/work hours", 0, 12, 0.1, 4.5],
+          ["selfControl", "Self-control score", 1, 10, 1, 4],
+          ["purposefulUse", "Purposeful use percent", 0, 100, 5, 25]
+        ],
+        pros: [
+          "Useful for learning, networking, and communication.",
+          "Can provide planned entertainment and creative ideas.",
+          "Helps creators and students share work."
+        ],
+        cons: [
+          "Unnecessary feed increases mindless scrolling.",
+          "Notifications interrupt deep work.",
+          "Late-night use can reduce sleep and motivation."
+        ],
+        calculate(v) {
+          let raw = -3.2 + 0.01 * v.dailyMinutes + 0.03 * v.unnecessaryFeed
+            + 0.008 * v.shortVideos + 0.012 * v.notifications
+            + 0.018 * v.lateNight - 0.17 * v.workHours
+            - 0.26 * v.selfControl - 0.012 * v.purposefulUse;
+          let risk = 100 / (1 + Math.exp(-raw));
+          risk = clamp(risk, 0, 100);
+          const recs = [];
+          if (v.dailyMinutes > 150) recs.push("Set a daily social app timer near 120 minutes.");
+          if (v.unnecessaryFeed > 45) recs.push("Unfollow low-value pages and open feeds only after planned work.");
+          if (v.notifications > 35) recs.push("Turn off non-essential notifications.");
+          if (v.lateNight > 25) recs.push("Keep the phone away from bed and stop scrolling before sleep.");
+          if (v.selfControl <= 5) recs.push("Use app blockers during deep-work blocks.");
+          return result(risk, "Predicted procrastination risk", recs, [
+            ["Daily minutes", v.dailyMinutes / 480],
+            ["Useless feed", v.unnecessaryFeed / 100],
+            ["Short videos", v.shortVideos / 300],
+            ["Notifications", v.notifications / 180],
+            ["Purposeful use", v.purposefulUse / 100]
+          ]);
+        }
+      }
+    };
+
+    const issueSelect = document.getElementById("issueSelect");
+    const inputFields = document.getElementById("inputFields");
+    const prosList = document.getElementById("prosList");
+    const consList = document.getElementById("consList");
+    const recommendationList = document.getElementById("recommendationList");
+    const issueCards = document.getElementById("issueCards");
+    const scoreText = document.getElementById("scoreText");
+    const levelText = document.getElementById("levelText");
+    const resultTitle = document.getElementById("resultTitle");
+    const resultSummary = document.getElementById("resultSummary");
+    const gauge = document.getElementById("gauge");
+    const chart = document.getElementById("factorChart");
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function result(value, title, recommendations, factors) {
+      return { value, title, recommendations, factors };
+    }
+
+    function levelFor(issue, value) {
+      if (issue.mode === "risk") {
+        if (value >= 70) return ["High Risk", "#d85c4a"];
+        if (value >= 40) return ["Moderate Risk", "#b7791f"];
+        return ["Low Risk", "#2f855a"];
+      }
+      const max = issue.unit === "/10" ? 10 : 100;
+      const scaled = value / max;
+      if (scaled >= 0.75) return ["Strong", "#2f855a"];
+      if (scaled >= 0.55) return ["Moderate", "#b7791f"];
+      return ["Needs Attention", "#d85c4a"];
+    }
+
+    function formatValue(field, value) {
+      const step = Number(field[4]);
+      if (step < 1) return Number(value).toFixed(1);
+      return String(Math.round(Number(value)));
+    }
+
+    function setList(element, items) {
+      element.innerHTML = "";
+      items.forEach((item) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        element.appendChild(li);
+      });
+    }
+
+    function renderIssueOptions() {
+      Object.entries(issues).forEach(([key, issue]) => {
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = issue.title;
+        issueSelect.appendChild(option);
+
+        const card = document.createElement("article");
+        card.className = "issue-card";
+        card.dataset.issue = key;
+        card.innerHTML = `<h3>${issue.title}</h3><p>${issue.short}</p>`;
+        card.addEventListener("click", () => {
+          issueSelect.value = key;
+          renderIssue();
+        });
+        issueCards.appendChild(card);
+      });
+    }
+
+    function renderIssue() {
+      const key = issueSelect.value;
+      const issue = issues[key];
+      inputFields.innerHTML = "";
+      issue.fields.forEach((field) => {
+        const [id, label, min, max, step, value] = field;
+        const row = document.createElement("div");
+        row.className = "field-row";
+        row.innerHTML = `
+          <div>
+            <label for="${id}">${label} <span class="value-pill" id="${id}Value">${value}</span></label>
+            <input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${value}">
+          </div>
+          <input id="${id}Number" type="number" min="${min}" max="${max}" step="${step}" value="${value}">
+        `;
+        inputFields.appendChild(row);
+
+        const range = document.getElementById(id);
+        const number = document.getElementById(`${id}Number`);
+        const pill = document.getElementById(`${id}Value`);
+        const sync = (source, target) => {
+          target.value = source.value;
+          pill.textContent = formatValue(field, source.value);
+          predict();
+        };
+        range.addEventListener("input", () => sync(range, number));
+        number.addEventListener("input", () => sync(number, range));
+      });
+
+      setList(prosList, issue.pros);
+      setList(consList, issue.cons);
+      document.querySelectorAll(".issue-card").forEach((card) => {
+        card.classList.toggle("active", card.dataset.issue === key);
+      });
+      predict();
+    }
+
+    function valuesForCurrentIssue() {
+      const issue = issues[issueSelect.value];
+      const values = {};
+      issue.fields.forEach((field) => {
+        values[field[0]] = Number(document.getElementById(field[0]).value);
+      });
+      return values;
+    }
+
+    function predict() {
+      const issue = issues[issueSelect.value];
+      const output = issue.calculate(valuesForCurrentIssue());
+      const max = issue.unit === "/10" ? 10 : 100;
+      const percent = clamp(output.value / max, 0, 1);
+      const [level, color] = levelFor(issue, output.value);
+
+      scoreText.textContent = `${output.value.toFixed(issue.unit === "/10" ? 1 : 0)}${issue.unit}`;
+      gauge.style.background = `conic-gradient(${color} ${percent * 360}deg, #e6eaef 0deg)`;
+      levelText.textContent = level;
+      levelText.style.color = color;
+      resultTitle.textContent = output.title;
+      resultSummary.textContent = `${issue.short} This estimate is based on the values you entered.`;
+
+      const recs = output.recommendations.length
+        ? output.recommendations
+        : ["Your current pattern looks balanced. Keep tracking for one week to confirm it."];
+      setList(recommendationList, recs);
+      drawChart(output.factors, issue.mode);
+    }
+
+    function drawChart(factors, mode) {
+      const ctx = chart.getContext("2d");
+      const width = chart.width;
+      const height = chart.height;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      const margin = 42;
+      const barHeight = 26;
+      const gap = 17;
+      const maxBarWidth = width - 220;
+      ctx.font = "14px Arial";
+      ctx.textBaseline = "middle";
+
+      factors.forEach((factor, index) => {
+        const y = margin + index * (barHeight + gap);
+        const label = factor[0];
+        const value = clamp(factor[1], 0, 1);
+        const color = mode === "risk" ? "#d85c4a" : "#147d7e";
+
+        ctx.fillStyle = "#344054";
+        ctx.fillText(label, 18, y + barHeight / 2);
+        ctx.fillStyle = "#edf0f4";
+        ctx.fillRect(170, y, maxBarWidth, barHeight);
+        ctx.fillStyle = color;
+        ctx.fillRect(170, y, maxBarWidth * value, barHeight);
+        ctx.fillStyle = "#1d2630";
+        ctx.fillText(`${Math.round(value * 100)}%`, 182 + maxBarWidth, y + barHeight / 2);
+      });
+    }
+
+    function useSampleValues() {
+      const issue = issues[issueSelect.value];
+      issue.fields.forEach((field) => {
+        const id = field[0];
+        const value = field[5];
+        document.getElementById(id).value = value;
+        document.getElementById(`${id}Number`).value = value;
+        document.getElementById(`${id}Value`).textContent = formatValue(field, value);
+      });
+      predict();
+    }
+
+    function downloadCsvTemplate() {
+      const issue = issues[issueSelect.value];
+      const headers = issue.fields.map((field) => field[1].replaceAll(",", ""));
+      const csv = `${headers.join(",")}\n${issue.fields.map((field) => field[5]).join(",")}\n`;
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${issue.title.toLowerCase().replaceAll(" ", "_")}_template.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    renderIssueOptions();
+    issueSelect.value = "productivity";
+    renderIssue();
+
+    issueSelect.addEventListener("change", renderIssue);
+    document.getElementById("predictButton").addEventListener("click", predict);
+    document.getElementById("sampleButton").addEventListener("click", useSampleValues);
+    document.getElementById("csvButton").addEventListener("click", downloadCsvTemplate);
+  </script>
+</body>
+</html>
